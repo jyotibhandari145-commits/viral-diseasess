@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Viral Symptom Checker (Educational)</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+    }
+
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f4f6fb;
+    }
+
+    .app {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 25px;
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.06);
+    }
+
+    h1 {
+      margin-top: 0;
+      text-align: center;
+    }
+
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffeeba;
+      padding: 10px 12px;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      margin-bottom: 20px;
+    }
+
+    .symptoms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 8px 20px;
+      margin-bottom: 20px;
+    }
+
+    .symptom-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.95rem;
+    }
+
+    button {
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      font-size: 1rem;
+      font-weight: 600;
+      background: #2563eb;
+      color: white;
+    }
+
+    button:hover {
+      opacity: 0.9;
+    }
+
+    .results {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+    }
+
+    .result-item {
+      margin-bottom: 8px;
+    }
+
+    .disease-name {
+      font-weight: bold;
+    }
+
+    .score-bar {
+      height: 6px;
+      border-radius: 4px;
+      background: #e5e7eb;
+      overflow: hidden;
+      margin-top: 3px;
+    }
+
+    .score-bar-inner {
+      height: 6px;
+      width: 0%;
+      background: #2563eb;
+    }
+
+    .small-text {
+      font-size: 0.85rem;
+      color: #6b7280;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <h1>Viral Symptom Checker</h1>
+
+    <div class="warning">
+      <strong>Note:</strong> This tool is for <strong>study and practice only</strong>.
+      It does <strong>not</strong> give a real medical diagnosis.  
+      If you feel sick, please visit a doctor or hospital.
+    </div>
+
+    <h3>Select the symptoms:</h3>
+    <div class="symptoms-grid" id="symptomList">
+      <!-- checkboxes will be added by JS -->
+    </div>
+
+    <button id="checkButton">Check possible viral illness</button>
+
+    <div class="results" id="results">
+      Select some symptoms and click the button to see possible matches.
+    </div>
+
+    <p class="small-text">
+      The matching is based on simple scoring (how many symptoms match).  
+      Real diagnosis is much more complex and requires a health professional.
+    </p>
+  </div>
+
+  <script>
+    // List of symptoms we’ll show as checkboxes
+    const allSymptoms = [
+      "Fever",
+      "High fever (very hot body)",
+      "Chills / shivering",
+      "Runny or blocked nose",
+      "Sneezing",
+      "Sore throat",
+      "Dry cough",
+      "Wet / mucus cough",
+      "Headache",
+      "Muscle or body aches",
+      "Extreme tiredness (fatigue)",
+      "Shortness of breath",
+      "Loss of taste or smell",
+      "Rash on skin",
+      "Red / watery eyes",
+      "Joint pain",
+      "Pain behind the eyes",
+      "Nausea / vomiting",
+      "Diarrhoea"
+    ];
+
+    // Simple knowledge base: diseases and their typical symptoms
+    const diseases = [
+      {
+        name: "Common Cold (educational)",
+        symptoms: [
+          "Runny or blocked nose",
+          "Sneezing",
+          "Sore throat",
+          "Wet / mucus cough",
+          "Mild fever",
+          "Headache"
+        ]
+      },
+      {
+        name: "Seasonal Flu / Influenza (educational)",
+        symptoms: [
+          "High fever (very hot body)",
+          "Chills / shivering",
+          "Headache",
+          "Muscle or body aches",
+          "Dry cough",
+          "Extreme tiredness (fatigue)",
+          "Sore throat"
+        ]
+      },
+      {
+        name: "COVID-19 like illness (educational)",
+        symptoms: [
+          "Fever",
+          "Dry cough",
+          "Extreme tiredness (fatigue)",
+          "Loss of taste or smell",
+          "Shortness of breath",
+          "Muscle or body aches",
+          "Sore throat"
+        ]
+      },
+      {
+        name: "Dengue-like illness (educational)",
+        symptoms: [
+          "High fever (very hot body)",
+          "Severe headache",
+          "Pain behind the eyes",
+          "Joint pain",
+          "Muscle or body aches",
+          "Nausea / vomiting",
+          "Rash on skin"
+        ]
+      },
+      {
+        name: "Measles-like illness (educational)",
+        symptoms: [
+          "High fever (very hot body)",
+          "Runny or blocked nose",
+          "Dry cough",
+          "Red / watery eyes",
+          "Rash on skin"
+        ]
+      }
+    ];
+
+    // Fix small typos: Our master list may not include "Mild fever" or "Severe headache"
+    // but they appear inside diseases. To keep it simple, we won't render those two;
+    // they still help with internal scoring if you extend the UI later.
+
+    // 1. Render the symptom checkboxes
+    const symptomListDiv = document.getElementById("symptomList");
+
+    allSymptoms.forEach(symptom => {
+      const label = document.createElement("label");
+      label.className = "symptom-item";
+
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.value = symptom;
+
+      const span = document.createElement("span");
+      span.textContent = symptom;
+
+      label.appendChild(checkbox);
+      label.appendChild(span);
+      symptomListDiv.appendChild(label);
+    });
+
+    // 2. When button is clicked, calculate matches
+    document.getElementById("checkButton").addEventListener("click", () => {
+      const selectedSymptoms = Array.from(
+        symptomListDiv.querySelectorAll("input[type='checkbox']:checked")
+      ).map(cb => cb.value);
+
+      const resultsDiv = document.getElementById("results");
+
+      if (selectedSymptoms.length === 0) {
+        resultsDiv.innerHTML = "Please select at least one symptom.";
+        return;
+      }
+
+      // Score each disease
+      const scored = diseases.map(d => {
+        const matches = d.symptoms.filter(s => selectedSymptoms.includes(s));
+        const score = matches.length / d.symptoms.length; // simple percentage
+        return {
+          name: d.name,
+          matches,
+          score
+        };
+      });
+
+      // Sort diseases by best match
+      scored.sort((a, b) => b.score - a.score);
+
+      // Build results HTML
+      let html = "<strong>Possible matches (for learning only):</strong><br><br>";
+
+      scored.forEach(d => {
+        const percent = Math.round(d.score * 100);
+        html += `
+          <div class="result-item">
+            <div class="disease-name">${d.name}</div>
+            <div>Match score: ${percent}%</div>
+            <div class="score-bar">
+              <div class="score-bar-inner" style="width:${percent}%;"></div>
+            </div>
+            <div class="small-text">
+              Matching symptoms: ${d.matches.length > 0 ? d.matches.join(", ") : "none"}
+            </div>
+          </div>
+        `;
+      });
+
+      html += `
+        <br>
+        <div class="small-text">
+          This is <strong>not</strong> a diagnosis. Different viral and non-viral illnesses can have the same symptoms.
+          If symptoms are strong, new, or worrying, please talk to a doctor.
+        </div>
+      `;
+
+      resultsDiv.innerHTML = html;
+    });
+  </script>
+</body>
+</html>
